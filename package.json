@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx playwright test"
+    "test": "npx playwright test",
+    "docker": "docker build . -t api-project:latest && docker run -it -p 9323:9323 -v ./:/app api-project:latest"
   },
   "keywords": [],
   "author": "",
