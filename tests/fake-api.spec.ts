@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { Scheduler } from "node:timers/promises";
 import z from "zod";
 
 const productSchema = z.object({
@@ -9,6 +8,17 @@ const productSchema = z.object({
   description: z.string(),
   category: z.string(),
   image: z.url(),
+});
+
+const userSchema = z.object({
+  id: z.int(),
+  email: z.email(),
+  username: z.string(),
+  password: z.string(),
+  name: z.object({
+    firstname: z.string(),
+    lastname: z.string(),
+  }),
 });
 
 // Could import Axios instead, but this is for demonstration without uneeded dependencies.
@@ -114,7 +124,8 @@ test.describe("fake store tests", () => {
       const updateData: Partial<z.infer<typeof productSchema>> = {
         title: "Eidolon of Blossoms",
         price: 2.95,
-        description: "Whenever this creature or another enchantment you control enters, draw a card.",
+        description:
+          "Whenever this creature or another enchantment you control enters, draw a card.",
         category: "Enchantment Creature - Spirit",
       };
 
@@ -125,6 +136,44 @@ test.describe("fake store tests", () => {
 
       expect(response.title).toBe(updateData.title);
       expect(response.id).toBe(5);
+    });
+  });
+
+  test.describe("users", () => {
+    test("get all users", async () => {
+      const schema = z.array(userSchema);
+      const response = await api.fetch("/users");
+      const data = schema.parse(response);
+
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0].id).toBeDefined();
+    });
+
+    test("get a single user", async () => {
+      const response = await api.fetch(`/users/${2}`);
+      const data = userSchema.parse(response);
+
+      expect(data.id).toBe(2);
+      expect(data).toHaveProperty("name");
+      expect(data.name.firstname).toBe("david");
+      expect(data.name.lastname).toBe("morrison");
+    });
+
+    test("get users and limit results", async () => {
+      const schema = z.array(userSchema);
+      const response = await api.fetch("/users?limit=5");
+      const data = schema.parse(response);
+
+      expect(data.length).toBe(5);
+    });
+
+    test("get users ascending", async () => {
+      const schema = z.array(userSchema);
+      const response = await api.fetch("/users?sort=asc");
+      const data = schema.parse(response);
+
+      expect(data[0].id).toBe(1);
+      expect(data[data.length - 1].id).toBe(data.length);
     });
   });
 });
